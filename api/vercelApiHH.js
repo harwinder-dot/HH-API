@@ -62,20 +62,12 @@
 const nodemailer = require("nodemailer");
 
 export default async function handler(req, res) {
-  // 1. MIMIC THE "CORS" PACKAGE (Set headers for EVERY request)
-  res.setHeader('Access-Control-Allow-Credentials', true);
-  res.setHeader('Access-Control-Allow-Origin', '*'); 
-  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-
-  // 2. HANDLE THE "OPTIONS" PREFLIGHT (The handshake)
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
 
-  // 3. YOUR EMAIL LOGIC
   if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Method Not Allowed' });
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   const { fullname, email, phone, country, message, type } = req.body;
@@ -90,10 +82,10 @@ export default async function handler(req, res) {
 
   try {
     await transporter.sendMail({
-      from: `"${fullname}" <${process.env.GMAIL_USER}>`,
+      from: process.env.GMAIL_USER,
       to: process.env.GMAIL_USER,
       subject: `[${type}] New Lead: ${fullname}`,
-      html: `<h3>New Lead</h3><p>Name: ${fullname}</p><p>Phone: ${phone}</p><p>Country: ${country}</p><p>Message: ${message}</p>`
+      text: `Name: ${fullname}\nEmail: ${email}\nPhone: ${phone}\nCountry: ${country}\nMessage: ${message}`
     });
     return res.status(200).json({ success: true });
   } catch (error) {
