@@ -62,22 +62,20 @@
 const nodemailer = require("nodemailer");
 
 export default async function handler(req, res) {
-  // Allow requests from any origin (fixes the 'origin null' and local testing issues)
+  // 1. MIMIC THE "CORS" PACKAGE (Set headers for EVERY request)
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*'); 
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
-  res.setHeader(
-    'Access-Control-Allow-Headers',
-    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
-  );
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
-  // IMPORTANT: Handle the 'OPTIONS' preflight request
+  // 2. HANDLE THE "OPTIONS" PREFLIGHT (The handshake)
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
 
+  // 3. YOUR EMAIL LOGIC
   if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Only POST allowed' });
+    return res.status(405).json({ message: 'Method Not Allowed' });
   }
 
   const { fullname, email, phone, country, message, type } = req.body;
@@ -95,15 +93,10 @@ export default async function handler(req, res) {
       from: `"${fullname}" <${process.env.GMAIL_USER}>`,
       to: process.env.GMAIL_USER,
       subject: `[${type}] New Lead: ${fullname}`,
-      html: `<p><strong>Name:</strong> ${fullname}</p>
-             <p><strong>Email:</strong> ${email}</p>
-             <p><strong>Phone:</strong> ${phone}</p>
-             <p><strong>Country:</strong> ${country}</p>
-             <p><strong>Type:</strong> ${type}</p>`
+      html: `<h3>New Lead</h3><p>Name: ${fullname}</p><p>Phone: ${phone}</p><p>Country: ${country}</p><p>Message: ${message}</p>`
     });
-
     return res.status(200).json({ success: true });
   } catch (error) {
-    return res.status(500).json({ error: error.message });
+    return res.status(500).json({ success: false, error: error.message });
   }
 }
